@@ -1,0 +1,14 @@
+# Local Postgres. On first start it runs api/db/*.sql in name order (schema, then seed).
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: hanare
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./api/db:/docker-entrypoint-initdb.d:ro
+      - pgdata:/var/lib/postgresql/data
+volumes:
+  pgdata:

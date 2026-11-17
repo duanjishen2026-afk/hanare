@@ -1,0 +1,24 @@
+# Render Blueprint: Dashboard -> New -> Blueprint -> pick this repo.
+services:
+  - type: web
+    name: hanare-api
+    runtime: node
+    rootDir: api
+    region: singapore
+    plan: free            # sleeps after ~15 idle minutes; use "starter" for the demo day
+    buildCommand: npm ci --include=dev && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: CLAUDE_MODEL
+        value: claude-opus-5-5
+      - key: JWT_SECRET
+        generateValue: true
+      - key: DATABASE_URL
+        sync: false       # Render asks for these in the dashboard
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false

@@ -1,0 +1,1120 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+<title>Hanare Remote Jobs</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=M+PLUS+1p:wght@700;800&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap">
+<style>
+/* Layout: a station departure board. Listings are set like timetable rows (line bullet, destination, times, fare)
+   with a reading pane beside them; the AI match box sits above as the ticket window. */
+:root{
+  --bg:#EEF1F7; --surface:#FFFFFF; --surface-2:#F5F7FB;
+  --ink:#131C33; --muted:#55607B; --line:#D6DCE9;
+  --primary:#27459B; --primary-ink:#FFFFFF; --primary-soft:#E4EAFA;
+  --noren:#1C2E6E; --noren-ink:#F3F5FC; --noren-muted:#B9C4E8; --noren-line:#3A4D93;
+  --hanko:#C5341D; --seal:#C5341D; --seal-ink:#FFFFFF;
+  --marker:#FFE35A;
+  --good:#136F45; --good-soft:#DCF2E6;
+  --warn:#8A5700; --warn-soft:#FAEDCB;
+  --bad:#A93019; --bad-soft:#FADFD8;
+  --sleep:#CDD5E6;
+  --cat-L:#D4691E; --cat-T:#2476C9; --cat-M:#C2407A; --cat-S:#16896A; --cat-Q:#6553CC; --cat-C:#A07608; --cat-R:#147F93; --cat-ink:#FFFFFF;
+  --shadow:0 1px 2px rgba(19,28,51,.05),0 6px 20px rgba(19,28,51,.06);
+  --r:10px;
+  --font-display:"M PLUS 1p","Hiragino Sans","Yu Gothic UI","Noto Sans JP",system-ui,sans-serif;
+  --font-body:"Zen Kaku Gothic New","Hiragino Kaku Gothic ProN","Yu Gothic","Noto Sans JP",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --font-mono:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0D1326; --surface:#161E38; --surface-2:#1C2645;
+    --ink:#E9EDF8; --muted:#9CA8C6; --line:#2C3759;
+    --primary:#95ABF6; --primary-ink:#0D1326; --primary-soft:#232F58;
+    --noren:#121B3A; --noren-ink:#F3F5FC; --noren-muted:#A7B3D9; --noren-line:#2F3C6B;
+    --hanko:#F07A63; --seal:#D4442C; --seal-ink:#FFFFFF;
+    --marker:#6A5A06;
+    --good:#62D49C; --good-soft:#143626;
+    --warn:#F2C062; --warn-soft:#3A2D0C;
+    --bad:#F58B76; --bad-soft:#40190F;
+    --sleep:#2A3557;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.25);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0D1326; --surface:#161E38; --surface-2:#1C2645;
+  --ink:#E9EDF8; --muted:#9CA8C6; --line:#2C3759;
+  --primary:#95ABF6; --primary-ink:#0D1326; --primary-soft:#232F58;
+  --noren:#121B3A; --noren-ink:#F3F5FC; --noren-muted:#A7B3D9; --noren-line:#2F3C6B;
+  --hanko:#F07A63; --seal:#D4442C; --seal-ink:#FFFFFF;
+  --marker:#6A5A06;
+  --good:#62D49C; --good-soft:#143626;
+  --warn:#F2C062; --warn-soft:#3A2D0C;
+  --bad:#F58B76; --bad-soft:#40190F;
+  --sleep:#2A3557;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.25);
+  color-scheme:dark;
+}
+
+*,*::before,*::after{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:400 15px/1.55 var(--font-body);-webkit-font-smoothing:antialiased}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:60;background:var(--noren)}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+h1,h2,h3,p,ul,ol,dl,dd{margin:0}
+ul,ol{padding:0;list-style:none}
+:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+.top :focus-visible{outline-color:var(--noren-ink)}
+.wrap{max-width:1240px;margin-inline:auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.mono{font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)}
+.fine{font-size:12.5px;color:var(--muted)}
+
+/* header */
+.top{background:var(--noren);color:var(--noren-ink);border-bottom:1px solid var(--noren-line)}
+.top-in{display:flex;flex-wrap:wrap;align-items:center;gap:10px 28px;padding-block:12px}
+.brand{display:inline-flex;align-items:center;gap:10px;color:inherit;text-decoration:none;font:800 21px/1 var(--font-display);letter-spacing:.01em}
+.seal{display:grid;place-items:center;width:30px;height:30px;border-radius:7px;background:var(--seal);color:var(--seal-ink);font:700 17px/1 var(--font-body);transform:rotate(-4deg)}
+.nav{display:flex;gap:4px}
+.nav a{display:inline-flex;align-items:center;color:var(--noren-muted);text-decoration:none;font-weight:700;font-size:14px;padding:8px 12px;border-radius:7px}
+.nav a[aria-current="page"]{color:var(--noren-ink);background:var(--noren-line)}
+.nav .count{font:600 12px/1 var(--font-mono);margin-left:7px;padding:3px 6px;border-radius:99px;background:var(--noren-ink);color:var(--noren)}
+.top-right{margin-left:auto;display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px}
+.clocks{display:flex;gap:14px;font:500 13px/1 var(--font-mono);color:var(--noren-muted);font-variant-numeric:tabular-nums}
+.clocks b{color:var(--noren-ink);font-weight:600}
+.locsel{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--noren-muted)}
+.locsel select{width:auto;max-width:100%;background:transparent;border:1px solid var(--noren-line);color:var(--noren-ink);border-radius:7px;padding:7px 8px;font-size:13px}
+.locsel option{background:var(--surface);color:var(--ink)}
+@media (max-width:720px){.top-right{margin-left:0;width:100%;justify-content:space-between}}
+
+/* intro + match box */
+.intro{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);gap:36px;padding-block:32px 28px;align-items:start}
+.intro-copy{display:grid;gap:16px;min-width:0}
+h1{font:800 clamp(26px,3.5vw,40px)/1.16 var(--font-display);letter-spacing:-.01em;text-wrap:balance}
+.lede{font-size:16px;color:var(--muted);max-width:52ch}
+.promises{display:grid;gap:10px;margin-top:4px}
+.promises li{display:grid;grid-template-columns:auto minmax(0,1fr);gap:12px;align-items:start;font-size:14px;color:var(--muted)}
+.promises b{color:var(--ink)}
+.tile{display:grid;place-items:center;width:30px;height:30px;border-radius:6px;border:1px solid var(--line);background:var(--surface);color:var(--primary);font:700 15px/1 var(--font-display)}
+.match-col{display:grid;gap:12px;min-width:0}
+.match{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:18px;box-shadow:var(--shadow);display:grid;gap:12px}
+.match-label{font:700 15px/1.3 var(--font-body)}
+textarea,input[type=search],select{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px 12px;width:100%}
+textarea{display:block;resize:vertical;line-height:1.5;min-height:96px}
+.eg{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center}
+.eg-label{font-size:12.5px;color:var(--muted)}
+.chip{font-size:13px;padding:6px 11px;border-radius:99px;border:1px solid var(--line);background:var(--surface-2)}
+.chip:hover{border-color:var(--primary)}
+.match-actions{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px}
+.ai-state{font-size:12.5px;color:var(--muted)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;font:700 14px/1 var(--font-body);padding:11px 16px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);text-decoration:none}
+.btn:hover{border-color:var(--primary)}
+.btn.primary{background:var(--primary);border-color:var(--primary);color:var(--primary-ink)}
+.btn:disabled{opacity:.55;cursor:default}
+.link{background:none;border:0;padding:0;color:var(--primary);font-weight:700;font-size:13px;text-decoration:underline;text-underline-offset:3px}
+.match-out{background:var(--primary-soft);border-radius:var(--r);padding:14px 16px;display:grid;gap:8px}
+.mo-head{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px}
+.mo-head strong{font-size:15px}
+.src{font:500 11.5px/1 var(--font-mono);letter-spacing:.04em;text-transform:uppercase;padding:4px 7px;border-radius:5px;background:var(--surface);color:var(--primary)}
+.mo-head .link{margin-left:auto}
+.mo-chips{display:flex;flex-wrap:wrap;gap:6px}
+.mo-chips span{font-size:12.5px;padding:3px 9px;border-radius:99px;background:var(--surface);border:1px solid var(--line)}
+.mo-note{font-size:13px;color:var(--warn)}
+@media (max-width:900px){.intro{grid-template-columns:minmax(0,1fr);gap:22px;padding-block:24px 20px}}
+
+/* board */
+.board{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,440px);gap:24px;align-items:start;padding-bottom:48px}
+.col-list{min-width:0}
+.filters{display:grid;gap:12px;margin-bottom:14px}
+.cats{display:flex;gap:6px;overflow-x:auto;padding:2px 2px 4px;scrollbar-width:thin}
+.cat{flex:none;display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:500;padding:5px 11px 5px 6px;border-radius:99px;border:1px solid var(--line);background:var(--surface);white-space:nowrap}
+.cat[data-cat="all"]{padding:5px 12px}
+.cat[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.opts{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center}
+.opt{display:flex;align-items:center;gap:7px;font-size:13px;color:var(--muted)}
+.opt select{width:auto;padding:7px 8px;color:var(--ink);font-size:13px}
+.opt input[type=checkbox]{width:16px;height:16px;margin:0;accent-color:var(--primary)}
+.res-head{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;margin-bottom:8px;font-size:13px;color:var(--muted)}
+.res-head b{color:var(--ink);font-size:14px}
+.tag{font:500 11px/1 var(--font-mono);letter-spacing:.05em;text-transform:uppercase;padding:4px 6px;border-radius:5px;border:1px dashed var(--muted);color:var(--muted)}
+
+.bullet{flex:none;display:inline-grid;place-items:center;width:30px;height:30px;border-radius:50%;color:var(--cat-ink);font:700 14px/1 var(--font-display)}
+.bullet.sm{width:20px;height:20px;font-size:11px}
+.list{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.list li+li{border-top:1px solid var(--line)}
+.row{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:4px 14px;width:100%;text-align:left;padding:14px 16px;background:none;border:0;align-items:start}
+.row:hover{background:var(--surface-2)}
+.row:focus-visible{outline-offset:-2px}
+.row-main{display:grid;gap:3px;min-width:0}
+.row-title{font-weight:700;font-size:15.5px;line-height:1.35}
+.row-co{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted)}
+.row-meta{display:flex;flex-wrap:wrap;gap:4px 12px;align-items:center;font-size:12.5px;color:var(--muted);margin-top:3px}
+.pill{font-size:12px;font-weight:500;padding:2px 8px;border-radius:99px;background:var(--surface-2);border:1px solid var(--line);color:var(--ink);white-space:nowrap}
+.pill.ok{background:var(--good-soft);border-color:transparent;color:var(--good)}
+.live{display:inline-flex;align-items:center;gap:6px;font-family:var(--font-mono);font-size:12px;font-variant-numeric:tabular-nums}
+.live i{flex:none;width:8px;height:8px;border-radius:50%;background:var(--muted)}
+.live.v-good i{background:var(--good)}
+.live.v-warn i{background:var(--warn)}
+.live.v-bad i{background:var(--bad)}
+.live.v-async i{background:transparent;border:1.5px solid var(--muted)}
+.row-pay{display:grid;justify-items:end;gap:1px;white-space:nowrap}
+.yen{font:600 16px/1.3 var(--font-mono);font-variant-numeric:tabular-nums;background:linear-gradient(transparent 58%,var(--marker) 58%);padding:0 3px}
+.unit{font-size:12px;color:var(--muted)}
+.approx{font:400 12px/1.3 var(--font-mono);color:var(--muted)}
+.row-match{grid-column:2/-1;display:flex;gap:10px;align-items:flex-start;margin-top:6px;padding-top:9px;border-top:1px dashed var(--line);font-size:13px;line-height:1.45}
+.score{flex:none;font:600 12.5px/1 var(--font-mono);padding:5px 7px;border-radius:6px;background:var(--primary);color:var(--primary-ink)}
+.score.mid{background:var(--primary-soft);color:var(--primary)}
+.score.low{background:var(--surface-2);color:var(--muted)}
+.hanko-s{flex:none;display:inline-grid;place-items:center;width:18px;height:18px;border:1.5px solid var(--hanko);color:var(--hanko);border-radius:50%;font:700 10px/1 var(--font-body);transform:rotate(-8deg)}
+.empty{padding:28px 20px;text-align:center;color:var(--muted);background:var(--surface);border:1px dashed var(--line);border-radius:var(--r);display:grid;gap:10px;justify-items:center}
+@media (max-width:560px){
+  .row{grid-template-columns:auto minmax(0,1fr)}
+  .row-pay{grid-column:2;display:flex;align-items:baseline;gap:8px;margin-top:4px}
+}
+
+/* detail pane */
+.detail{min-width:0;position:sticky;top:calc(env(safe-area-inset-top,0px) + 16px);max-height:calc(100vh - 32px);overflow:auto;border-radius:var(--r)}
+.sheet-bar{display:none}
+.d-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r)}
+.d-sec{padding:18px 20px;display:grid;gap:10px}
+.d-sec+.d-sec{border-top:1px solid var(--line)}
+.d-kicker{display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:12.5px;color:var(--muted);font-weight:500}
+.d-title{font:800 22px/1.25 var(--font-display);text-wrap:balance}
+.d-ja{font-size:13px;color:var(--muted)}
+.d-co{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.d-co-name{font-weight:700}
+.hanko{flex:none;display:grid;place-items:center;width:56px;height:56px;border-radius:50%;border:2px solid var(--hanko);box-shadow:inset 0 0 0 3px var(--surface),inset 0 0 0 4px var(--hanko);color:var(--hanko);font:700 13px/1.15 var(--font-body);text-align:center;transform:rotate(-9deg)}
+.pending{font-size:12px;color:var(--muted);border:1px dashed var(--muted);border-radius:99px;padding:3px 9px;white-space:nowrap}
+.facts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 16px}
+.facts dt{font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:500}
+.facts dd{font-weight:500;margin-top:2px}
+.est{display:grid;gap:6px;padding:12px;border-radius:8px;background:var(--surface-2)}
+.est input[type=range]{width:100%;accent-color:var(--primary);margin:0}
+.sec-head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px 12px}
+h3{font:700 14.5px/1.3 var(--font-body)}
+.verdict{display:inline-flex;align-items:center;font-size:12.5px;font-weight:700;padding:3px 10px;border-radius:99px;background:var(--surface-2);color:var(--muted)}
+.verdict.good{background:var(--good-soft);color:var(--good)}
+.verdict.warn{background:var(--warn-soft);color:var(--warn)}
+.verdict.bad{background:var(--bad-soft);color:var(--bad)}
+.strip-bar{position:relative;height:26px;border-radius:6px;background:var(--surface-2);border:1px solid var(--line);overflow:hidden}
+.strip-bar .sleep{position:absolute;top:0;bottom:0;left:0;width:25%;background:repeating-linear-gradient(135deg,var(--sleep) 0 4px,transparent 4px 8px)}
+.strip-bar .seg{position:absolute;top:3px;bottom:3px;min-width:6px;border-radius:4px;background:var(--good)}
+.strip-bar .seg.warn{background:var(--warn)}
+.strip-bar .seg.bad{background:var(--bad)}
+.strip-bar .now{position:absolute;top:0;bottom:0;width:2px;background:var(--ink)}
+.strip-ticks{display:flex;justify-content:space-between;font:400 11px/1 var(--font-mono);color:var(--muted)}
+.d-match{display:flex;gap:12px;align-items:flex-start;padding:12px;border-radius:8px;background:var(--primary-soft)}
+.d-match p{font-size:14px}
+.tr-note{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;font-size:12.5px;color:var(--muted)}
+.bul{list-style:disc;padding-left:18px;display:grid;gap:4px}
+.d-actions{display:flex;flex-wrap:wrap;gap:10px}
+.compose{display:grid;gap:12px}
+.compose label{display:grid;gap:6px;font-size:13px;font-weight:700}
+.compose textarea{font-weight:400;font-size:14px;min-height:150px}
+.status{font-size:13px;color:var(--muted);min-height:1.2em}
+@media (min-width:1024px){
+  .row[aria-current="true"]{background:var(--primary-soft)}
+}
+@media (max-width:1023px){
+  .board{grid-template-columns:minmax(0,1fr)}
+  .detail{display:none;position:fixed;inset:0;z-index:40;max-height:none;border-radius:0;background:var(--bg);
+    padding-top:calc(env(safe-area-inset-top,0px) + 10px);padding-bottom:calc(env(safe-area-inset-bottom,0px) + 28px);
+    padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+  .detail.open{display:block}
+  .sheet-bar{display:flex;margin-bottom:10px}
+  body.sheet-open{overflow:hidden}
+}
+
+/* applications */
+.apps{padding-block:28px 48px;display:grid;gap:28px;max-width:860px}
+.apps h2{font:800 24px/1.2 var(--font-display)}
+.apps-sec{display:grid;gap:12px}
+.app{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px 18px;display:grid;gap:14px}
+.app-head{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:start}
+.app-title{background:none;border:0;padding:0;text-align:left;font-weight:700;font-size:15.5px;line-height:1.35;text-decoration:underline;text-decoration-color:var(--line);text-underline-offset:3px}
+.app-when{font:400 12px/1.4 var(--font-mono);color:var(--muted);text-align:right;display:grid;gap:5px;justify-items:end}
+.track{display:grid;grid-template-columns:repeat(4,minmax(0,1fr))}
+.track li{position:relative;display:grid;gap:6px;justify-items:center;font-size:12.5px;color:var(--muted);text-align:center}
+.track li::before{content:"";width:14px;height:14px;border-radius:50%;border:2px solid var(--line);background:var(--surface);position:relative;z-index:1}
+.track li::after{content:"";position:absolute;top:6px;left:-50%;width:100%;height:2px;background:var(--line)}
+.track li:first-child::after{display:none}
+.track li.done::before{background:var(--primary);border-color:var(--primary)}
+.track li.done::after,.track li.now::after{background:var(--primary)}
+.track li.now{color:var(--ink);font-weight:700}
+.track li.now::before{border-color:var(--primary);box-shadow:0 0 0 4px var(--primary-soft)}
+.app details{font-size:14px}
+.app summary{cursor:pointer;font-weight:700;font-size:13px;color:var(--primary)}
+.msg{display:grid;gap:10px;margin-top:10px;padding:12px;border-radius:8px;background:var(--surface-2);white-space:pre-wrap}
+
+.foot{border-top:1px solid var(--line);padding-block:18px 28px;font-size:12.5px;color:var(--muted)}
+.toast{position:fixed;z-index:70;left:max(16px,env(safe-area-inset-left,0px));right:max(16px,env(safe-area-inset-right,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px));display:flex;justify-content:center;pointer-events:none}
+.toast span{max-width:520px;background:var(--ink);color:var(--bg);padding:11px 16px;border-radius:9px;font-size:14px;box-shadow:var(--shadow)}
+@media (prefers-reduced-motion:no-preference){
+  .row,.btn,.chip{transition:background-color .12s,border-color .12s}
+}
+</style>
+
+<header class="top">
+  <div class="wrap top-in">
+    <a class="brand" href="#jobs"><span class="seal" lang="ja" aria-hidden="true">離</span>Hanare</a>
+    <nav class="nav" aria-label="Sections">
+      <a href="#jobs" id="navJobs">Find work</a>
+      <a href="#applications" id="navApps">Applications<span class="count" id="appCount" hidden>0</span></a>
+    </nav>
+    <div class="top-right">
+      <div class="clocks" aria-label="Current time"><span>Tokyo <b id="clkJp">--:--</b></span><span>You <b id="clkMe">--:--</b></span></div>
+      <label class="locsel" for="loc">I live in <select id="loc"></select></label>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section id="view-jobs">
+    <div class="wrap intro">
+      <div class="intro-copy">
+        <h1>Part-time work for Japanese companies, from wherever you live.</h1>
+        <p class="lede">Japanese teams hire remote part-timers for the languages, markets and night hours they can't cover at home. Hanare makes those jobs readable and applyable without fluent Japanese.</p>
+        <ul class="promises">
+          <li><span class="tile" lang="ja" aria-hidden="true">訳</span><span><b>Posted in Japanese, readable by you.</b> Every listing is translated, and the original is one tap away.</span></li>
+          <li><span class="tile" lang="ja" aria-hidden="true">時</span><span><b>Hours in your time zone.</b> See whether a shift lands in your afternoon or at 3 a.m.</span></li>
+          <li><span class="tile" lang="ja" aria-hidden="true">円</span><span><b>Pay in yen and in your currency.</b> Paid monthly through Wise or PayPal under a contractor agreement.</span></li>
+        </ul>
+      </div>
+      <div class="match-col">
+        <form class="match" id="matchForm">
+          <label class="match-label" for="me">Tell us about you, in any language</label>
+          <textarea id="me" rows="4" placeholder="Languages you speak, your Japanese level, what you are good at, hours you have per week"></textarea>
+          <div class="eg"><span class="eg-label">Example profiles:</span><span id="egs" class="eg"></span></div>
+          <div class="match-actions">
+            <button class="btn primary" id="matchBtn" type="submit">Find my matches</button>
+            <span class="ai-state" id="aiState" aria-live="polite"></span>
+          </div>
+        </form>
+        <div id="matchOut" hidden></div>
+      </div>
+    </div>
+
+    <div class="wrap board">
+      <div class="col-list">
+        <div class="filters">
+          <input type="search" id="q" placeholder="Search by title, skill, language or company" aria-label="Search listings">
+          <div class="cats" id="cats" role="group" aria-label="Category"></div>
+          <div class="opts">
+            <label class="opt" for="fJp">My Japanese
+              <select id="fJp">
+                <option value="any">Any level</option><option value="0">None</option><option value="1">N5</option><option value="2">N4</option><option value="3">N3</option><option value="4">N2</option><option value="5">N1</option>
+              </select>
+            </label>
+            <label class="opt" for="fHours">Hours I have
+              <select id="fHours">
+                <option value="any">Any</option><option value="5">5 a week</option><option value="10">10 a week</option><option value="20">20 a week</option>
+              </select>
+            </label>
+            <label class="opt" for="fSort">Sort
+              <select id="fSort">
+                <option value="new">Newest</option><option value="pay">Highest pay</option><option value="match">Best match</option>
+              </select>
+            </label>
+            <label class="opt" for="fAsync"><input type="checkbox" id="fAsync">No fixed hours</label>
+            <label class="opt" for="fNight"><input type="checkbox" id="fNight">Hide overnight shifts</label>
+          </div>
+        </div>
+        <div class="res-head"><b id="resCount"></b><span class="tag">Sample listings</span><span id="resLoc"></span></div>
+        <div id="listBox"></div>
+      </div>
+      <aside class="detail" id="detail" aria-label="Listing details"></aside>
+    </div>
+  </section>
+
+  <section id="view-apps" hidden>
+    <div class="wrap"><div class="apps" id="appsBox"></div></div>
+  </section>
+</main>
+
+<footer class="wrap foot">Hanare is a hackathon prototype. Companies, listings and exchange rates are fictional samples, and applications stay in this browser.</footer>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function () {
+'use strict';
+var $ = function (s, r) { return (r || document).querySelector(s); };
+var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
+var esc = function (s) { return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
+var fmt = function (n) { return Number(n).toLocaleString('en-US'); };
+var store = {
+  get: function (k, d) { try { var v = localStorage.getItem('hanare.' + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
+  set: function (k, v) { try { localStorage.setItem('hanare.' + k, JSON.stringify(v)); } catch (e) {} }
+};
+
+/* ---------- data (fictional samples) ---------- */
+var CATS = { L: 'Language teaching', T: 'Translation & localization', M: 'Marketing & sales', S: 'Customer support', Q: 'Tech & QA', C: 'Creative', R: 'Research & data' };
+var JP = ['None', 'N5', 'N4', 'N3', 'N2', 'N1'];
+var LOCS = [
+  { id: 'manila', label: 'Manila', tz: 'Asia/Manila', cur: 'PHP' },
+  { id: 'jakarta', label: 'Jakarta', tz: 'Asia/Jakarta', cur: 'IDR' },
+  { id: 'hcmc', label: 'Ho Chi Minh City', tz: 'Asia/Ho_Chi_Minh', cur: 'VND' },
+  { id: 'bangkok', label: 'Bangkok', tz: 'Asia/Bangkok', cur: 'THB' },
+  { id: 'bengaluru', label: 'Bengaluru', tz: 'Asia/Kolkata', cur: 'INR' },
+  { id: 'shanghai', label: 'Shanghai', tz: 'Asia/Shanghai', cur: 'CNY' },
+  { id: 'nairobi', label: 'Nairobi', tz: 'Africa/Nairobi', cur: 'KES' },
+  { id: 'berlin', label: 'Berlin', tz: 'Europe/Berlin', cur: 'EUR' },
+  { id: 'london', label: 'London', tz: 'Europe/London', cur: 'GBP' },
+  { id: 'saopaulo', label: 'São Paulo', tz: 'America/Sao_Paulo', cur: 'BRL' },
+  { id: 'mexico', label: 'Mexico City', tz: 'America/Mexico_City', cur: 'MXN' },
+  { id: 'newyork', label: 'New York', tz: 'America/New_York', cur: 'USD' },
+  { id: 'la', label: 'Los Angeles', tz: 'America/Los_Angeles', cur: 'USD' },
+  { id: 'sydney', label: 'Sydney', tz: 'Australia/Sydney', cur: 'AUD' }
+];
+/* indicative demo rates, units of currency per 1 yen */
+var RATES = { USD: 0.0066, EUR: 0.0061, GBP: 0.0052, PHP: 0.38, IDR: 106, VND: 168, THB: 0.23, INR: 0.56, CNY: 0.047, KES: 0.85, BRL: 0.037, MXN: 0.125, AUD: 0.0101 };
+
+var JOBS = [
+  { id: 'j01', cat: 'L', title: 'Online English conversation tutor', ja: 'オンライン英会話講師', co: 'Hoshizora Eikaiwa', coJa: '星空英会話', verified: true,
+    pay: 1800, unit: 'hr', hrEq: 1800, hours: [6, 15], jp: 0, langs: ['English (native or near-native)'], langKeys: ['english'],
+    live: { s: 1140, e: 1380, days: 'Every day. You choose your own slots inside this window.' },
+    tags: ['teaching', 'ESL', 'conversation', 'TEFL', 'tutoring'], posted: 1, applicants: 34,
+    desc: 'Teach 25-minute one-to-one conversation lessons to adult learners in Japan after their workday. Lesson materials are provided; you bring patience and a clear speaking voice. Open at least six slots a week, whenever suits you inside the evening window.',
+    descJa: '社会人の受講生を対象に、25分間のマンツーマン英会話レッスンを担当していただきます。教材は当社で用意します。夜の時間帯（19時〜23時）のうち、週6コマ以上ご都合のよい枠を開けてください。',
+    tasks: ['Run 25-minute video lessons from the provided curriculum', 'Write a three-line feedback note after each lesson', 'Keep at least six evening slots open per week'],
+    reqs: ['Native or near-native English', 'Stable connection, headset and webcam', 'Teaching experience or a TEFL certificate is a plus'] },
+  { id: 'j02', cat: 'T', title: 'Anime subtitle translator, Japanese to Spanish', ja: 'アニメ字幕翻訳者（日本語→スペイン語）', co: 'Minato Subtitle Lab', coJa: 'ミナト字幕ラボ', verified: true,
+    pay: 1100, unit: 'video minute', hrEq: 2600, hours: [5, 12], jp: 4, langs: ['Spanish (native)'], langKeys: ['spanish'], live: null,
+    tags: ['subtitling', 'translation', 'anime', 'Aegisub', 'timing'], posted: 3, applicants: 21,
+    desc: 'Translate and time subtitles for weekly anime episodes headed to Latin American streaming. You receive the Japanese script and video on Monday and deliver within 72 hours. A style guide covers honorifics, on-screen text and song lyrics.',
+    descJa: '中南米向け配信用に、毎週放送されるアニメの字幕翻訳とタイミング調整をお願いします。月曜日に日本語台本と映像をお渡しし、72時間以内に納品していただきます。敬称・画面テロップ・歌詞の扱いはスタイルガイドに沿ってください。',
+    tasks: ['Translate one 24-minute episode per week into neutral Latin American Spanish', 'Time subtitles to the video and follow the style guide', 'Flag jokes and cultural references that need a translator\'s note'],
+    reqs: ['Native Spanish and Japanese around JLPT N2', 'A subtitling sample, or a paid trial episode', 'Comfortable with Aegisub or Subtitle Edit'] },
+  { id: 'j03', cat: 'T', title: 'Native check for an English JRPG script', ja: '英語ローカライズのネイティブチェック（RPG）', co: 'Sakuramichi Games', coJa: '桜道ゲームズ', verified: true,
+    pay: 2600, unit: 'hr', hrEq: 2600, hours: [5, 10], jp: 3, langs: ['English (native)'], langKeys: ['english'], live: null,
+    tags: ['localization', 'editing', 'proofreading', 'games', 'JRPG', 'writing'], posted: 2, applicants: 18,
+    desc: 'Our in-house team has translated a 300,000-character fantasy RPG into English. Read the English against the Japanese source, fix stiff lines and keep each character\'s voice consistent. Work is assigned in weekly batches through a shared spreadsheet.',
+    descJa: '社内で英訳した約30万字のファンタジーRPGのテキストについて、日本語原文と照らし合わせながら英語のネイティブチェックをお願いします。不自然な表現の修正と、キャラクターごとの口調の統一が主な業務です。作業は共有スプレッドシートで週ごとに割り振ります。',
+    tasks: ['Edit around 8,000 words of game dialogue per week', 'Keep a glossary of names, skills and item terms', 'Leave short notes where the Japanese source is ambiguous'],
+    reqs: ['Native English with an ear for dialogue', 'Japanese reading at JLPT N3 or better', 'You have finished at least one JRPG and can say why its writing worked'] },
+  { id: 'j04', cat: 'M', title: 'Short-video creator for a matcha brand (US and EU audience)', ja: '海外向けSNS運用・ショート動画制作（抹茶ブランド）', co: 'Kogane Tea', coJa: '黄金茶舗', verified: true,
+    pay: 2200, unit: 'hr', hrEq: 2200, hours: [8, 12], jp: 0, langs: ['English (fluent)'], langKeys: ['english'],
+    live: { s: 600, e: 660, days: 'Wednesdays in Japan: one weekly planning call. Everything else is async.' },
+    tags: ['social media', 'TikTok', 'Instagram', 'short video', 'video editing', 'copywriting', 'content'], posted: 5, applicants: 47,
+    desc: 'A 120-year-old tea shop in Uji is opening its online store to overseas buyers. Plan and edit three short videos a week for TikTok and Instagram from footage our staff shoot, and write the captions. We send you tea so you know what you are selling.',
+    descJa: '宇治で創業120年の茶舗が、海外向けオンラインストアを開設します。店舗スタッフが撮影した素材をもとに、TikTok・Instagram向けのショート動画を週3本企画・編集し、キャプションも作成していただきます。商品理解のため、お茶のサンプルをお送りします。',
+    tasks: ['Edit three 20 to 40 second videos per week from supplied footage', 'Write captions and reply to comments in English', 'Join a one-hour planning call every Wednesday'],
+    reqs: ['A portfolio of short-form videos you edited', 'Fluent written English. No Japanese needed: our coordinator speaks English', 'Interest in tea, food or Japanese craft'] },
+  { id: 'j05', cat: 'S', title: 'Customer support for an overseas pottery store (English)', ja: '越境ECカスタマーサポート（英語）', co: 'Hinode Pottery', coJa: '日の出陶器', verified: true,
+    pay: 1600, unit: 'hr', hrEq: 1600, hours: [10, 20], jp: 2, langs: ['English (fluent)'], langKeys: ['english'],
+    live: { s: 1320, e: 1560, days: 'Monday to Friday. You cover the hours when Japan is asleep.' },
+    tags: ['customer support', 'email', 'chat', 'e-commerce', 'Shopify', 'Zendesk'], posted: 1, applicants: 12,
+    desc: 'We ship Mino-ware tableware to 30 countries, and most customer questions arrive while Japan is asleep. Answer email and chat about orders, breakage claims and customs fees. Our warehouse team writes internal notes in simple Japanese.',
+    descJa: '美濃焼の食器を世界30か国に発送しています。お客様からのお問い合わせの多くは日本の深夜に届くため、その時間帯のメール・チャット対応をお願いします。内容は注文状況、破損時の対応、関税に関するご質問などです。倉庫チームとの連絡は簡単な日本語で行います。',
+    tasks: ['Reply to 20 to 30 tickets per shift in Zendesk', 'Log breakage claims with photos for the warehouse', 'Suggest FAQ updates when the same question keeps coming'],
+    reqs: ['Fluent, friendly written English', 'Japanese at JLPT N4, enough to read short internal notes', 'Support or retail experience'] },
+  { id: 'j06', cat: 'R', title: 'Market research interviewer in Indonesia (skincare)', ja: 'インドネシア市場リサーチャー（スキンケア）', co: 'Nagisa Cosmetics', coJa: '渚コスメ', verified: true,
+    pay: 2000, unit: 'hr', hrEq: 2000, hours: [5, 8], jp: 0, langs: ['Indonesian (native)', 'English (working)'], langKeys: ['indonesian', 'english'], live: null,
+    tags: ['research', 'interviews', 'survey', 'beauty', 'skincare', 'reporting'], posted: 6, applicants: 9,
+    desc: 'Before launching a sunscreen line in Indonesia we want to hear from real shoppers. Recruit and interview eight women aged 20 to 35 per month about their skincare routine, then send us a two-page English summary. A halal-certification question set is included.',
+    descJa: 'インドネシアでの日焼け止めシリーズ発売に先立ち、現地の消費者の声を集めたいと考えています。毎月、20〜35歳の女性8名を募集してスキンケア習慣についてインタビューを行い、英語2ページの要約レポートを提出していただきます。ハラル認証に関する質問項目も含みます。',
+    tasks: ['Recruit and interview eight shoppers per month in Indonesian', 'Photograph shelf displays at two local drugstores', 'Write a two-page English summary with direct quotes'],
+    reqs: ['Native Indonesian, living in Indonesia', 'Working English for reports', 'Experience with interviews, surveys or beauty retail'] },
+  { id: 'j07', cat: 'Q', title: 'Mobile game QA tester, Brazilian Portuguese build', ja: 'モバイルゲームQAテスター（ブラジルポルトガル語版）', co: 'Tanuki Works', coJa: 'たぬきワークス', verified: true,
+    pay: 1700, unit: 'hr', hrEq: 1700, hours: [6, 12], jp: 0, langs: ['Portuguese (Brazil, native)', 'English (working)'], langKeys: ['portuguese', 'english'], live: null,
+    tags: ['QA', 'testing', 'bug reports', 'games', 'Android', 'iOS'], posted: 4, applicants: 26,
+    desc: 'Play through each new build of our puzzle game in Brazilian Portuguese before release. Look for text that overflows buttons, awkward translations and crashes on mid-range Android phones. Bugs go into Jira in English with a screenshot.',
+    descJa: 'パズルゲームのブラジルポルトガル語版について、リリース前の各ビルドをテストプレイしていただきます。ボタンからはみ出すテキスト、不自然な翻訳、ミドルレンジのAndroid端末でのクラッシュなどを確認し、スクリーンショット付きで英語でJiraに報告してください。',
+    tasks: ['Test a new build every two weeks on your own phone', 'File bugs in English with steps and screenshots', 'Rate translation quality line by line in a spreadsheet'],
+    reqs: ['Native Brazilian Portuguese', 'An Android phone from the last four years', 'Clear written English. Earlier QA work is a plus'] },
+  { id: 'j08', cat: 'Q', title: 'Frontend developer (React) for a ryokan booking widget', ja: 'フロントエンドエンジニア（React／業務委託）', co: 'Aoba Travel Media', coJa: '青葉トラベルメディア', verified: true,
+    pay: 4500, unit: 'hr', hrEq: 4500, hours: [10, 20], jp: 2, langs: ['English (working)'], langKeys: ['english'],
+    live: { s: 1020, e: 1050, days: 'Mondays and Thursdays: a 30-minute team stand-up. The rest is async.' },
+    tags: ['React', 'TypeScript', 'JavaScript', 'frontend', 'API', 'GitHub', 'web development'], posted: 2, applicants: 31,
+    desc: 'Build the English and Traditional Chinese versions of our ryokan booking widget. The codebase is React and TypeScript; issues and pull requests are in English, chat is mixed. Two short stand-ups a week, the rest is async.',
+    descJa: '旅館予約ウィジェットの英語版・繁体字中国語版の開発を担当していただきます。技術スタックはReactとTypeScriptです。IssueやPull Requestは英語、チャットは日本語と英語が混在しています。週2回の短い定例以外は非同期で進めます。',
+    tasks: ['Ship calendar, guest-count and payment steps as React components', 'Wire the widget to our availability API', 'Review pull requests from two teammates'],
+    reqs: ['Three or more years with React and TypeScript', 'Japanese at JLPT N4 for chat (GitHub is in English)', 'A public repo or shipped product we can look at'] },
+  { id: 'j09', cat: 'C', title: 'Travel writer: Kyushu guides for English readers', ja: 'インバウンド向け旅行ライター（英語・九州エリア）', co: 'Aoba Travel Media', coJa: '青葉トラベルメディア', verified: true,
+    pay: 9000, unit: 'article', hrEq: 2250, hours: [4, 8], jp: 0, langs: ['English (native)'], langKeys: ['english'], live: null,
+    tags: ['writing', 'travel', 'SEO', 'editing', 'content', 'blog'], posted: 8, applicants: 52,
+    desc: 'Write 1,200-word guides to onsen towns, ferry routes and food in Kyushu for visitors planning a first trip. We provide a research pack in English and photos; you turn it into something people want to read. Two to four articles a month.',
+    descJa: '初めて九州を訪れる海外旅行者向けに、温泉地・フェリー航路・グルメなどを紹介する1,200ワード程度の英語ガイド記事を執筆していただきます。英語の取材資料と写真は当社で用意します。月2〜4本の執筆をお願いします。',
+    tasks: ['Write two to four 1,200-word guides per month', 'Check opening hours and prices against the research pack', 'Suggest headlines and a meta description for each piece'],
+    reqs: ['Native English and published writing samples', 'Basic SEO habits: headings, internal links, plain titles', 'Having visited Japan helps but is not required'] },
+  { id: 'j10', cat: 'C', title: 'Illustrator for social graphics and sticker sets', ja: 'イラストレーター（SNS用グラフィック・スタンプ制作）', co: 'Fukurou Books', coJa: 'ふくろう出版', verified: true,
+    pay: 2800, unit: 'hr', hrEq: 2800, hours: [5, 10], jp: 1, langs: ['Any. The brief is in simple English'], langKeys: [], live: null,
+    tags: ['illustration', 'character design', 'Figma', 'Procreate', 'design', 'drawing'], posted: 3, applicants: 63,
+    desc: 'Our children\'s book imprint needs a second illustrator for social posts and messaging-app sticker sets featuring Moku the owl. You get a character sheet and a monthly list of scenes. Feedback comes as marked-up images, so little Japanese is needed.',
+    descJa: '児童書レーベルのキャラクター「ふくろうのモク」を使ったSNS投稿用イラストとメッセージアプリ用スタンプの制作をお願いします。キャラクターシートと毎月の制作リストをお渡しします。修正指示は画像への書き込みで行うため、日本語力はほとんど必要ありません。',
+    tasks: ['Draw eight social illustrations per month in the house style', 'Produce one 16-sticker set per quarter', 'Deliver layered files with named layers'],
+    reqs: ['A portfolio with character work', 'Procreate, Clip Studio or Figma', 'Hiragana reading (around JLPT N5) for sticker captions'] },
+  { id: 'j11', cat: 'L', title: 'Business Vietnamese tutor for a robotics team', ja: 'ベトナム語講師（社内研修・ビジネス会話）', co: 'Tsubame Robotics', coJa: 'つばめロボティクス', verified: true,
+    pay: 2400, unit: 'hr', hrEq: 2400, hours: [3, 6], jp: 3, langs: ['Vietnamese (native)'], langKeys: ['vietnamese'],
+    live: { s: 1080, e: 1200, days: 'Tuesdays and Thursdays.' },
+    tags: ['teaching', 'Vietnamese', 'business', 'tutoring', 'corporate training'], posted: 7, applicants: 7,
+    desc: 'Six engineers are preparing to work with our new factory partner in Da Nang. Teach them practical Vietnamese for meetings and factory visits in two evening sessions a week. Explanations in Japanese help, since most of the group are beginners.',
+    descJa: 'ダナンの新しい工場パートナーとの協業に向けて、エンジニア6名にベトナム語を教えていただける方を募集します。会議や工場訪問で使える実践的な会話を中心に、週2回・夜のオンラインレッスンをお願いします。受講者はほぼ初心者のため、日本語で説明できる方を歓迎します。',
+    tasks: ['Teach two 60-minute group lessons per week', 'Prepare role-plays for meetings and factory tours', 'Send a short vocabulary sheet after each lesson'],
+    reqs: ['Native Vietnamese', 'Japanese at JLPT N3 to explain grammar', 'Teaching or corporate training experience'] },
+  { id: 'j12', cat: 'R', title: 'Thai speech transcriber for AI training data', ja: 'AI学習データ作成（タイ語音声の書き起こし）', co: 'Yamabiko AI', coJa: 'やまびこAI', verified: false,
+    pay: 1400, unit: 'hr', hrEq: 1400, hours: [5, 20], jp: 0, langs: ['Thai (native)'], langKeys: ['thai'], live: null,
+    tags: ['transcription', 'annotation', 'data labeling', 'AI', 'data'], posted: 1, applicants: 15,
+    desc: 'We are building a Thai speech-recognition model for hotel front desks. Listen to short recordings, type exactly what was said and tag background noise. Work in our browser tool whenever you have a quiet hour; minimum five hours a week.',
+    descJa: 'ホテルのフロント業務向けに、タイ語の音声認識モデルを開発しています。短い音声を聞いて正確に書き起こし、背景ノイズのタグ付けを行う業務です。ブラウザ上の専用ツールで、ご都合のよい時間に作業できます（週5時間以上）。',
+    tasks: ['Transcribe about 40 short clips per hour', 'Tag speaker changes and background noise', 'Flag clips that contain personal information'],
+    reqs: ['Native Thai with accurate spelling', 'Headphones and a quiet place to work', 'No Japanese needed. Instructions are in English and Thai'] },
+  { id: 'j13', cat: 'M', title: 'Sales assistant for a sake exporter (German-speaking markets)', ja: 'ドイツ語圏向け営業アシスタント（日本酒輸出）', co: 'Kitakaze Sake Brewery', coJa: '北風酒造', verified: true,
+    pay: 2300, unit: 'hr', hrEq: 2300, hours: [8, 12], jp: 2, langs: ['German (native)', 'English (working)'], langKeys: ['german', 'english'],
+    live: { s: 960, e: 1020, days: 'Fridays in Japan: one weekly review call.' },
+    tags: ['sales', 'outreach', 'email', 'CRM', 'B2B', 'hospitality'], posted: 9, applicants: 5,
+    desc: 'A Niigata brewery is looking for its first restaurant and bottle-shop customers in Germany, Austria and Switzerland. Research prospects, write the first email in German and book tasting calls for our export manager. Commission is paid on top for every first order.',
+    descJa: '新潟の酒蔵が、ドイツ・オーストリア・スイスで最初の取引先となる飲食店や酒販店を探しています。見込み客のリサーチ、ドイツ語での初回メール作成、輸出担当者との試飲ミーティングの日程調整をお願いします。初回受注ごとに別途インセンティブをお支払いします。',
+    tasks: ['Find and qualify 30 prospects per month', 'Write first-contact emails in German and follow up', 'Keep the CRM up to date and join a Friday review call'],
+    reqs: ['Native German', 'Japanese at JLPT N4, or working English', 'Hospitality, wine or B2B sales background'] },
+  { id: 'j14', cat: 'S', title: 'Discord community moderator, English and Japanese', ja: 'Discordコミュニティモデレーター（英語・日本語）', co: 'Tanuki Works', coJa: 'たぬきワークス', verified: true,
+    pay: 1500, unit: 'hr', hrEq: 1500, hours: [7, 14], jp: 4, langs: ['English (fluent)'], langKeys: ['english'],
+    live: { s: 60, e: 300, days: 'Any four nights a week, during Japan\'s overnight hours.' },
+    tags: ['community', 'Discord', 'moderation', 'games', 'support'], posted: 2, applicants: 19,
+    desc: 'Our game\'s Discord has 40,000 members, and the Japanese team is asleep when the Americas are most active. Keep channels friendly, answer common questions, and relay bug reports and player mood to the team in Japanese each morning.',
+    descJa: '当社ゲームのDiscordサーバーには約4万人のメンバーがいますが、北米・南米のプレイヤーが最も活発な時間帯は日本の深夜にあたります。その時間帯のチャンネル管理、よくある質問への回答、そして不具合報告やコミュニティの雰囲気を毎朝日本語でチームに共有していただきます。',
+    tasks: ['Moderate English channels during Japan\'s overnight hours', 'Answer FAQs and escalate account issues', 'Post a short daily summary in Japanese'],
+    reqs: ['Fluent English and Japanese at JLPT N2', 'Moderation experience on Discord or Reddit', 'Calm under pressure during outages and events'] },
+  { id: 'j15', cat: 'C', title: 'French voice-over narrator for tourism films', ja: 'フランス語ナレーター（観光プロモーション動画）', co: 'Shiosai Studio', coJa: '潮騒スタジオ', verified: false,
+    pay: 6000, unit: 'finished minute', hrEq: 3000, hours: [2, 5], jp: 0, langs: ['French (native)'], langKeys: ['french'], live: null,
+    tags: ['voice-over', 'narration', 'audio editing', 'recording', 'voice acting'], posted: 11, applicants: 14,
+    desc: 'Record French narration for a series of three-minute films about the Setouchi islands. Scripts arrive already translated; you record at home, clean the audio and send WAV files. Around two films a month through next spring.',
+    descJa: '瀬戸内の島々を紹介する3分間の映像シリーズで、フランス語ナレーションを担当していただきます。翻訳済みの原稿をお送りしますので、ご自宅で収録・整音のうえWAVファイルで納品してください。来春まで月2本程度を予定しています。',
+    tasks: ['Record and edit about six finished minutes per month', 'Deliver 48 kHz WAV files within five days', 'Re-record pickups after client review'],
+    reqs: ['Native French with a warm, clear delivery', 'A treated recording space and a condenser microphone', 'A demo reel. Documentary work is a plus'] },
+  { id: 'j16', cat: 'M', title: 'E-commerce copywriter for China listings (Simplified Chinese)', ja: '中国向けEC商品ページライター（簡体字）', co: 'Nagisa Cosmetics', coJa: '渚コスメ', verified: true,
+    pay: 2000, unit: 'hr', hrEq: 2000, hours: [6, 10], jp: 4, langs: ['Chinese (native, Simplified)'], langKeys: ['chinese'], live: null,
+    tags: ['copywriting', 'e-commerce', 'beauty', 'translation', 'social media', 'Xiaohongshu'], posted: 4, applicants: 23,
+    desc: 'Turn Japanese product sheets for our skincare range into product pages and social posts that sound natural to shoppers in mainland China. You work from the Japanese originals, so strong reading ability matters more than speaking.',
+    descJa: '当社スキンケア商品の日本語資料をもとに、中国本土の消費者に自然に響く商品ページとSNS投稿文を作成していただきます。日本語の原稿から直接作業するため、会話力よりも読解力を重視します。',
+    tasks: ['Write ten product pages per month from Japanese source sheets', 'Draft four social posts per week', 'Check ingredient claims against our compliance list'],
+    reqs: ['Native Chinese (Simplified)', 'Japanese reading at JLPT N2', 'Beauty or e-commerce writing samples'] }
+];
+var JOB = {};
+JOBS.forEach(function (j) { JOB[j.id] = j; });
+
+var EGS = [
+  { label: 'Design student, São Paulo', loc: 'saopaulo', text: 'Sou estudante de design em São Paulo. Português nativo, inglês fluente, japonês básico (JLPT N5). Desenho personagens no Procreate e uso Figma. Tenho umas 10 horas por semana, de preferência à noite.' },
+  { label: 'ESL teacher, Manila', loc: 'manila', text: 'I am an ESL teacher in Manila with 5 years of experience and a TEFL certificate. Native-level English, no Japanese yet. Free on weekday evenings, about 12 hours a week.' },
+  { label: 'Game QA tester, Berlin', loc: 'berlin', text: 'QA-Tester aus Berlin, Deutsch als Muttersprache, fließend Englisch, Japanisch auf N2-Niveau. Ich liebe JRPGs, habe Erfahrung mit Lokalisierungstests und moderiere einen Discord-Server. 8 bis 10 Stunden pro Woche.' }
+];
+var DAY = 86400000;
+var EXAMPLE_APPS = [
+  { jobId: 'j03', at: Date.now() - 6 * DAY, stage: 2, example: true,
+    en: 'Hello,\n\nI am a native English editor who has finished more JRPGs than I should admit. I read Japanese at N3 level and have edited fan translations for two years. I can take eight hours a week and would be glad to do a trial batch.',
+    ja: 'ご担当者様\n\nはじめまして。英語ネイティブの編集者です。日本語はN3レベルで読むことができ、2年間ファン翻訳の校正に携わってまいりました。週8時間の稼働が可能です。トライアルにも喜んで対応いたします。何卒よろしくお願いいたします。' },
+  { jobId: 'j09', at: Date.now() - 2 * DAY, stage: 1, example: true,
+    en: 'Hello,\n\nI write travel features for two English-language blogs and spent three weeks in Kyushu last spring. I can deliver two guides a month and am comfortable with SEO basics.',
+    ja: 'ご担当者様\n\nはじめまして。英語の旅行ブログ2媒体で記事を執筆しております。昨年の春には九州に3週間滞在しました。月2本の執筆が可能で、SEOの基本にも対応できます。ご検討のほどよろしくお願いいたします。' }
+];
+var STAGES = ['Sent', 'Viewed', 'Interview', 'Offer'];
+
+/* ---------- state ---------- */
+var deviceTz = 'UTC';
+try { deviceTz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'; } catch (e) {}
+var devLoc = LOCS.filter(function (l) { return l.tz === deviceTz; })[0];
+if (!devLoc) {
+  devLoc = { id: 'device', label: deviceTz.split('/').pop().replace(/_/g, ' '), tz: deviceTz, cur: 'USD' };
+  LOCS.unshift(devLoc);
+}
+var S = {
+  view: 'jobs', q: '', cat: 'all', jp: 'any', hours: 'any', asyncOnly: false, hideNight: false, sort: 'new',
+  sel: JOBS.slice().sort(function (a, b) { return a.posted - b.posted; })[0].id,
+  sheetOpen: false, showJa: false, composeFor: null, drafts: {}, drafting: null,
+  loc: store.get('loc', devLoc.id), match: null, matchBusy: false, aiOff: false,
+  saved: store.get('saved', []), apps: store.get('apps', [])
+};
+if (!LOCS.some(function (l) { return l.id === S.loc; })) S.loc = devLoc.id;
+if (!Array.isArray(S.saved)) S.saved = [];
+if (!Array.isArray(S.apps)) S.apps = [];
+S.apps = S.apps.filter(function (a) { return a && JOB[a.jobId]; });
+S.saved = S.saved.filter(function (id) { return JOB[id]; });
+
+/* ---------- time and money ---------- */
+function loc() { return LOCS.filter(function (l) { return l.id === S.loc; })[0] || devLoc; }
+function tzParts(tz, d) {
+  var f = new Intl.DateTimeFormat('en-US', { timeZone: tz, hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  var p = {};
+  f.formatToParts(d).forEach(function (x) { p[x.type] = x.value; });
+  return p;
+}
+function tzOffsetMin(tz) {
+  try {
+    var d = new Date(), p = tzParts(tz, d);
+    var asUTC = Date.UTC(+p.year, +p.month - 1, +p.day, (+p.hour) % 24, +p.minute, +p.second);
+    return Math.round((asUTC - d.getTime()) / 60000);
+  } catch (e) { return 0; }
+}
+function nowMin(tz) { try { var p = tzParts(tz, new Date()); return ((+p.hour) % 24) * 60 + (+p.minute); } catch (e) { return 0; } }
+function delta() { return tzOffsetMin(loc().tz) - 540; }
+function hm(m) { m = ((m % 1440) + 1440) % 1440; return String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0'); }
+function liveInfo(job) {
+  if (!job.live) return { async: true, verdict: 'async' };
+  var d = delta(), len = job.live.e - job.live.s, ls = job.live.s + d;
+  var a = ((ls % 1440) + 1440) % 1440;
+  var within = function (lo, hi) {
+    var t = 0;
+    [[a, a + len], [a - 1440, a + len - 1440]].forEach(function (r) { t += Math.max(0, Math.min(r[1], hi) - Math.max(r[0], lo)); });
+    return t;
+  };
+  var night = within(0, 360), edge = within(360, 480) + within(1320, 1440);
+  var verdict = night >= len / 2 ? 'bad' : (night > 0 || edge > 0) ? 'warn' : 'good';
+  return { async: false, a: a, len: len, dayShift: Math.floor(ls / 1440), verdict: verdict, text: hm(a) + '–' + hm(a + len) };
+}
+var VERDICT = { good: 'Fits your day', warn: 'Early or late for you', bad: 'Overnight for you', async: 'No fixed hours' };
+function localMoney(yen) {
+  var c = loc().cur, v = yen * (RATES[c] || RATES.USD), big = v >= 200;
+  try { return new Intl.NumberFormat('en-US', { style: 'currency', currency: c, maximumFractionDigits: big ? 0 : 2, minimumFractionDigits: big ? 0 : 2 }).format(v); }
+  catch (e) { return c + ' ' + Math.round(v); }
+}
+function unitText(job) { return job.unit === 'hr' ? '/hr' : 'per ' + job.unit; }
+function ago(days) { return days <= 0 ? 'today' : days === 1 ? '1 day ago' : days + ' days ago'; }
+
+/* ---------- small pieces ---------- */
+function bullet(cat, cls) { return '<span class="bullet ' + (cls || '') + '" style="background:var(--cat-' + cat + ')" aria-hidden="true">' + cat + '</span>'; }
+function jpPill(job) { return '<span class="pill' + (job.jp === 0 ? ' ok' : '') + '">' + (job.jp === 0 ? 'No Japanese needed' : 'Japanese ' + JP[job.jp]) + '</span>'; }
+function band(sc) { return sc >= 75 ? '' : sc >= 50 ? 'mid' : 'low'; }
+function matchOf(id) { return S.match && S.match.byId[id] || null; }
+function applied(id) { return S.apps.some(function (a) { return a.jobId === id; }); }
+var toastTimer;
+function toast(msg) {
+  var t = $('#toast');
+  t.innerHTML = '<span>' + esc(msg) + '</span>';
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function () { t.innerHTML = ''; }, 5200);
+}
+
+/* ---------- list ---------- */
+function visibleJobs() {
+  var words = S.q.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  var out = JOBS.filter(function (j) {
+    if (S.cat !== 'all' && j.cat !== S.cat) return false;
+    if (S.jp !== 'any' && j.jp > +S.jp) return false;
+    if (S.hours !== 'any' && j.hours[0] > +S.hours) return false;
+    if (S.asyncOnly && j.live) return false;
+    if (S.hideNight && liveInfo(j).verdict === 'bad') return false;
+    if (words.length) {
+      var hay = (j.title + ' ' + j.co + ' ' + j.tags.join(' ') + ' ' + j.langs.join(' ') + ' ' + CATS[j.cat]).toLowerCase();
+      if (!words.every(function (w) { return hay.indexOf(w) !== -1; })) return false;
+    }
+    return true;
+  });
+  var sort = S.sort === 'match' && !S.match ? 'new' : S.sort;
+  var sc = function (j) { var m = matchOf(j.id); return m ? m.score : -1; };
+  out.sort(function (a, b) {
+    if (sort === 'pay') return b.hrEq - a.hrEq;
+    if (sort === 'match') return (sc(b) - sc(a)) || (a.posted - b.posted);
+    return a.posted - b.posted;
+  });
+  return out;
+}
+function rowHtml(job) {
+  var info = liveInfo(job), m = matchOf(job.id);
+  return '<li><button type="button" class="row" data-open="' + job.id + '" aria-current="' + (job.id === S.sel) + '">' +
+    bullet(job.cat) +
+    '<span class="row-main">' +
+      '<span class="row-title">' + esc(job.title) + '</span>' +
+      '<span class="row-co">' + esc(job.co) + (job.verified ? '<span class="hanko-s" lang="ja" role="img" aria-label="Verified employer" title="Verified employer">認</span>' : '') + '</span>' +
+      '<span class="row-meta">' + jpPill(job) + '<span>' + job.hours[0] + '–' + job.hours[1] + ' h/week</span>' +
+        '<span class="live v-' + info.verdict + '"><i></i>' + (info.async ? 'No fixed hours' : info.text + ' your time') + '</span></span>' +
+    '</span>' +
+    '<span class="row-pay"><span class="yen">¥' + fmt(job.pay) + '</span><span class="unit">' + unitText(job) + '</span><span class="approx">≈ ' + esc(localMoney(job.pay)) + '</span></span>' +
+    (m ? '<span class="row-match"><span class="score ' + band(m.score) + '">' + m.score + '%</span><span>' + esc(m.why) + '</span></span>' : '') +
+    '</button></li>';
+}
+function renderList() {
+  var jobs = visibleJobs();
+  $('#resCount').textContent = jobs.length + (jobs.length === 1 ? ' listing' : ' listings');
+  $('#resLoc').textContent = 'Times and currency for ' + loc().label + ' · indicative rates';
+  $('#listBox').innerHTML = jobs.length
+    ? '<ul class="list">' + jobs.map(rowHtml).join('') + '</ul>'
+    : '<div class="empty"><p>No listings fit these filters.</p><button type="button" class="btn" data-act="clear-filters">Clear filters</button></div>';
+}
+function renderCats() {
+  var html = '<button type="button" class="cat" data-cat="all" aria-pressed="' + (S.cat === 'all') + '">All</button>';
+  Object.keys(CATS).forEach(function (k) {
+    html += '<button type="button" class="cat" data-cat="' + k + '" aria-pressed="' + (S.cat === k) + '">' + bullet(k, 'sm') + esc(CATS[k]) + '</button>';
+  });
+  $('#cats').innerHTML = html;
+}
+
+/* ---------- detail ---------- */
+function stripHtml(info) {
+  var segs = [], a = info.a, end = info.a + info.len, pct = function (m) { return (m / 1440 * 100).toFixed(2) + '%'; };
+  segs.push([a, Math.min(end, 1440)]);
+  if (end > 1440) segs.push([0, end - 1440]);
+  var cls = info.verdict === 'good' ? '' : info.verdict;
+  return '<div class="strip" role="img" aria-label="Live hours ' + info.text + ' in your time zone">' +
+    '<div class="strip-bar"><span class="sleep"></span>' +
+    segs.map(function (s) { return '<span class="seg ' + cls + '" style="left:' + pct(s[0]) + ';width:' + pct(s[1] - s[0]) + '"></span>'; }).join('') +
+    '<span class="now" style="left:' + pct(nowMin(loc().tz)) + '"></span></div>' +
+    '<div class="strip-ticks"><span>00</span><span>06</span><span>12</span><span>18</span><span>24</span></div></div>';
+}
+function estText(job, h) {
+  var m = Math.round(job.pay * h * 4.33 / 100) * 100;
+  return 'About <b class="mono">¥' + fmt(m) + '</b> a month (≈ ' + esc(localMoney(m)) + ') at <b>' + h + ' hours a week</b>';
+}
+function draftLabel() { return sampleFn && !S.aiOff ? 'Draft with AI' : 'Use a template'; }
+function renderDetail() {
+  var job = JOB[S.sel], box = $('#detail');
+  if (!job) { box.innerHTML = ''; return; }
+  var info = liveInfo(job), m = matchOf(job.id), d = delta(), L = loc();
+  var mid = Math.round((job.hours[0] + job.hours[1]) / 2);
+  var saved = S.saved.indexOf(job.id) !== -1;
+  var h = '<div class="sheet-bar"><button type="button" class="btn" data-act="close">Back to listings</button></div><div class="d-card">';
+
+  h += '<section class="d-sec">' +
+    '<div class="d-kicker">' + bullet(job.cat, 'sm') + '<span>' + esc(CATS[job.cat]) + '</span><span>·</span><span>Posted ' + ago(job.posted) + '</span><span>·</span><span>' + job.applicants + ' applicants</span></div>' +
+    '<h2 class="d-title">' + esc(job.title) + '</h2>' +
+    '<p class="d-ja" lang="ja">' + esc(job.ja) + '</p>' +
+    '<div class="d-co"><div><div class="d-co-name">' + esc(job.co) + ' <span class="muted" lang="ja" style="font-weight:400">' + esc(job.coJa) + '</span></div>' +
+      '<div class="fine">' + (job.verified ? 'Company registration and payment history checked by Hanare' : 'New employer. Checks are still in progress') + '</div></div>' +
+      (job.verified ? '<span class="hanko" lang="ja" role="img" aria-label="Verified employer">確認<br>済</span>' : '<span class="pending">Verification pending</span>') +
+    '</div></section>';
+
+  if (m) {
+    h += '<section class="d-sec"><div class="d-match"><span class="score ' + band(m.score) + '">' + m.score + '%</span><div><h3>Why this fits you</h3><p>' + esc(m.why) + '</p></div></div></section>';
+  }
+
+  h += '<section class="d-sec"><dl class="facts">' +
+    '<div><dt>Pay</dt><dd><span class="yen">¥' + fmt(job.pay) + '</span> <span class="unit">' + unitText(job) + '</span><br><span class="approx">≈ ' + esc(localMoney(job.pay)) + '</span></dd></div>' +
+    '<div><dt>Hours</dt><dd>' + job.hours[0] + ' to ' + job.hours[1] + ' a week</dd></div>' +
+    '<div><dt>Japanese</dt><dd>' + (job.jp === 0 ? 'Not needed' : 'JLPT ' + JP[job.jp] + ' or better') + '</dd></div>' +
+    '<div><dt>Languages</dt><dd>' + esc(job.langs.join(', ')) + '</dd></div>' +
+    '<div><dt>Contract</dt><dd>Contractor agreement <span class="muted" lang="ja">業務委託</span></dd></div>' +
+    '<div><dt>Payout</dt><dd>Monthly, Wise or PayPal</dd></div>' +
+    '</dl>' +
+    (job.unit === 'hr'
+      ? '<div class="est"><label class="fine" for="estHours" id="estOut">' + estText(job, mid) + '</label>' +
+        '<input type="range" id="estHours" min="' + job.hours[0] + '" max="' + job.hours[1] + '" step="1" value="' + mid + '" aria-label="Hours per week"></div>'
+      : '') +
+    '</section>';
+
+  if (info.async) {
+    h += '<section class="d-sec"><div class="sec-head"><h3>When you would work</h3><span class="verdict">No fixed hours</span></div>' +
+      '<p>Work whenever suits you and deliver by the deadline. The team replies during Japanese office hours, <b class="mono">' + hm(600 + d) + '–' + hm(1140 + d) + '</b> your time.</p></section>';
+  } else {
+    h += '<section class="d-sec"><div class="sec-head"><h3>When you would be live</h3><span class="verdict ' + info.verdict + '">' + VERDICT[info.verdict] + '</span></div>' +
+      '<p><b class="mono">' + info.text + '</b> in ' + esc(L.label) + ' <span class="muted">(' + hm(job.live.s) + '–' + hm(job.live.e) + ' in Japan' +
+        (info.dayShift < 0 ? ', which starts the day before for you' : info.dayShift > 0 ? ', which starts the next day for you' : '') + ')</span></p>' +
+      stripHtml(info) +
+      '<p class="fine">' + esc(job.live.days) + ' Hatched area: midnight to 06:00 where you live. The line marks now.</p></section>';
+  }
+
+  h += '<section class="d-sec"><div class="sec-head"><h3>About the role</h3></div>' +
+    '<div class="tr-note"><span>' + (S.showJa ? 'Original posting in Japanese' : 'Translated from Japanese by AI') + '</span>' +
+    '<button type="button" class="link" data-act="toggle-ja">' + (S.showJa ? 'Show English' : 'Show original 日本語') + '</button></div>' +
+    (S.showJa ? '<p lang="ja">' + esc(job.descJa) + '</p>' : '<p>' + esc(job.desc) + '</p>') +
+    '<h3>What you will do</h3><ul class="bul">' + job.tasks.map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('') + '</ul>' +
+    '<h3>What they ask for</h3><ul class="bul">' + job.reqs.map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('') + '</ul>' +
+    '</section>';
+
+  h += '<section class="d-sec">';
+  if (applied(job.id)) {
+    h += '<div class="d-actions"><a class="btn" href="#applications">Applied. See it in Applications</a>' +
+      '<button type="button" class="btn" data-act="save" aria-pressed="' + saved + '">' + (saved ? 'Saved' : 'Save') + '</button></div>';
+  } else if (S.composeFor === job.id) {
+    var dr = S.drafts[job.id] || { en: '', ja: '' };
+    h += '<div class="compose"><div><h3>Your application</h3><p class="fine">Write in English. The employer receives a business-Japanese version alongside it.</p></div>' +
+      '<label for="msgEn">Your message (English)<textarea id="msgEn" rows="8" placeholder="Why you fit this role, what you have done before, when you can work">' + esc(dr.en) + '</textarea></label>' +
+      '<label for="msgJa">What the employer receives <span lang="ja">(日本語)</span><textarea id="msgJa" rows="8" lang="ja" placeholder="ご担当者様">' + esc(dr.ja) + '</textarea></label>' +
+      '<div class="d-actions"><button type="button" class="btn" id="draftBtn" data-act="draft">' + draftLabel() + '</button>' +
+      '<button type="button" class="btn" id="stopBtn" data-act="stop" hidden>Stop</button>' +
+      '<button type="button" class="btn primary" id="sendBtn" data-act="send">Send application</button></div>' +
+      '<p class="status" id="draftStatus" aria-live="polite"></p>' +
+      '<p class="fine">Prototype: sending saves this to your Applications tab. Nothing reaches an employer.</p></div>';
+  } else {
+    h += '<div class="d-actions"><button type="button" class="btn primary" data-act="apply">Apply</button>' +
+      '<button type="button" class="btn" data-act="save" aria-pressed="' + saved + '">' + (saved ? 'Saved' : 'Save') + '</button></div>';
+  }
+  h += '</section></div>';
+  box.innerHTML = h;
+}
+function paintSheet() {
+  $('#detail').classList.toggle('open', S.sheetOpen);
+  document.body.classList.toggle('sheet-open', S.sheetOpen);
+}
+function openJob(id) {
+  if (!JOB[id]) return;
+  if (S.drafting && S.drafting !== id && draftCtl) draftCtl.abort();
+  if (S.sel !== id) { S.showJa = false; if (S.composeFor !== id) S.composeFor = null; }
+  S.sel = id; S.sheetOpen = true;
+  renderDetail(); paintSheet();
+  $('#detail').scrollTop = 0;
+  $$('.row').forEach(function (r) { r.setAttribute('aria-current', String(r.getAttribute('data-open') === id)); });
+}
+
+/* ---------- AI ---------- */
+var sampleFn; /* undefined until the runtime answers; null when unavailable */
+var samplePromise = (window.claude && typeof window.claude.use === 'function')
+  ? window.claude.use('sample').catch(function () { return null; })
+  : Promise.resolve(null);
+samplePromise.then(function (f) {
+  sampleFn = f || null;
+  paintAiState();
+  var b = $('#draftBtn'); if (b && !S.drafting) b.textContent = draftLabel();
+});
+function getSample() {
+  if (sampleFn !== undefined) return Promise.resolve(sampleFn);
+  return Promise.race([samplePromise, new Promise(function (r) { setTimeout(function () { r(null); }, 3000); })]);
+}
+var AI_OFF = { not_granted: 1, sampling_disabled: 1, not_declared: 1, capability_disabled: 1, capability_removed: 1 };
+function paintAiState() {
+  var el = $('#aiState');
+  if (S.matchBusy) { el.textContent = 'Reading your profile…'; return; }
+  if (sampleFn === undefined) { el.textContent = ''; return; }
+  el.textContent = sampleFn && !S.aiOff ? 'Matching and drafts are written by Claude.' : 'AI is unavailable in this view. A keyword matcher steps in.';
+}
+
+function matchPrompt(text) {
+  var L = loc(), off = tzOffsetMin(L.tz);
+  var jobs = JOBS.map(function (j) {
+    return { id: j.id, title: j.title, category: CATS[j.cat], japanese: j.jp ? 'JLPT ' + JP[j.jp] + ' or better' : 'none needed', languages: j.langs,
+      hoursPerWeek: j.hours.join('-'), live: j.live ? hm(j.live.s) + '-' + hm(j.live.e) + ' JST = ' + liveInfo(j).text + ' candidate local time' : 'none (async)',
+      pay: '¥' + j.pay + ' per ' + j.unit, skills: j.tags };
+  });
+  return [
+    'You are the matching engine of a job board where people who live outside Japan find remote part-time work with Japanese companies.',
+    '',
+    'CANDIDATE (free text, may be in any language):',
+    '"""', text.slice(0, 2000), '"""',
+    'Candidate lives in ' + L.label + ' (UTC' + (off >= 0 ? '+' : '') + (off / 60) + '). Japan is UTC+9.',
+    '',
+    'JOBS (JSON):',
+    JSON.stringify(jobs),
+    '',
+    'Extract the candidate profile and pick the 5 jobs that fit best. Lower the score sharply when the job needs more Japanese than the candidate has, needs a language they lack, or has live hours between 00:00 and 06:00 in their local time. Use only what the candidate wrote.',
+    'Reply with only JSON in exactly this shape:',
+    '{"profile":{"languages":["Portuguese (native)","English (fluent)"],"japanese":"N5","skills":["illustration","Figma"],"hoursPerWeek":10,"summary":"one short sentence in English"},"matches":[{"id":"j10","score":88,"why":"one sentence of at most 24 words, written in the same language the candidate wrote in, naming the concrete reasons"}]}',
+    'Scores are integers from 0 to 100. Order matches best first.'
+  ].join('\n');
+}
+function normalizeAi(d) {
+  if (!d || !Array.isArray(d.matches)) return null;
+  var byId = {}, n = 0;
+  d.matches.forEach(function (m) {
+    var id = String(m && m.id), sc = Math.round(Number(m && m.score));
+    if (!JOB[id] || !isFinite(sc)) return;
+    byId[id] = { score: Math.max(0, Math.min(100, sc)), why: String(m.why || '').slice(0, 260) }; n++;
+  });
+  if (!n) return null;
+  var p = d.profile || {};
+  var arr = function (v) { return Array.isArray(v) ? v.slice(0, 6).map(function (x) { return String(x).slice(0, 40); }) : []; };
+  return { source: 'ai', byId: byId, profile: { languages: arr(p.languages), japanese: String(p.japanese || '').slice(0, 24), skills: arr(p.skills), hours: Number(p.hoursPerWeek) || null, summary: String(p.summary || '').slice(0, 220) } };
+}
+
+/* keyword fallback so the flow works without AI */
+var LANGWORDS = {
+  english: ['english', 'inglês', 'ingles', 'inglés', 'englisch', 'anglais', '英语', '英語'], spanish: ['spanish', 'español', 'espanol', 'espanhol', 'spanisch'],
+  portuguese: ['portuguese', 'português', 'portugues'], indonesian: ['indonesian', 'bahasa'], vietnamese: ['vietnamese', 'tiếng việt', 'vietnam'],
+  thai: ['thai', 'ไทย'], german: ['german', 'deutsch'], french: ['french', 'français', 'francais'], chinese: ['chinese', 'mandarin', '中文', '汉语', '普通话']
+};
+var SYN = {
+  illustration: ['illustrat', 'ilustra', 'desenh', 'zeichn', 'drawing'], 'character design': ['character', 'personagen'], teaching: ['teach', 'professor', 'lehrer'],
+  tutoring: ['tutor'], ESL: ['esl', 'tefl', 'tesol'], TEFL: ['tefl'], QA: ['qa', 'tester'], testing: ['test'], localization: ['locali', 'lokalisierung'],
+  moderation: ['moderat', 'moderier'], games: ['game', 'jrpg', 'jogo', 'spiel'], design: ['design'], 'web development': ['developer', 'frontend', 'front-end'],
+  'social media': ['social', 'tiktok', 'instagram'], 'video editing': ['video', 'capcut', 'premiere'], writing: ['writer', 'writing', 'blog'], translation: ['translat', 'tradu', 'übersetz']
+};
+function localMatch(text) {
+  var t = text.toLowerCase(), has = function (w) { return t.indexOf(w) !== -1; };
+  var langs = Object.keys(LANGWORDS).filter(function (k) { return LANGWORDS[k].some(has); });
+  var lv = t.match(/\bn\s?-?([1-5])\b/), myJp = lv ? 6 - (+lv[1]) : 0;
+  if (!lv && /fluent japanese|japanese fluent|business japanese/.test(t)) myJp = 4;
+  var hrs = t.match(/(\d{1,2})\s*(?:h\b|hrs?|hours?|horas?|stunden|heures)/), myH = hrs ? +hrs[1] : null;
+  var skillsFound = {};
+  var scored = JOBS.map(function (j) {
+    var sc = 45, bits = [];
+    var hits = j.tags.filter(function (tag) { return has(tag.toLowerCase()) || (SYN[tag] || []).some(has); });
+    hits.forEach(function (x) { skillsFound[x] = 1; });
+    sc += Math.min(hits.length, 3) * 9;
+    if (hits.length) bits.push('matches your ' + hits.slice(0, 2).join(' and ') + ' experience');
+    if (j.langKeys.length) {
+      var need = j.langKeys.filter(function (k) { return k !== 'english' || j.langKeys.length === 1; });
+      var ok = need.every(function (k) { return langs.indexOf(k) !== -1; });
+      if (ok) { sc += 18; bits.push('you have the language'); } else sc -= 32;
+    }
+    var gap = j.jp - myJp;
+    if (gap <= 0) { sc += 8; bits.push(j.jp === 0 ? 'no Japanese needed' : 'your Japanese is enough'); } else sc -= 18 * gap;
+    var v = liveInfo(j).verdict;
+    if (v === 'bad') sc -= 15; else if (v === 'warn') sc -= 5; else if (v === 'async') { sc += 3; bits.push('no fixed hours'); } else bits.push('live hours fit your day');
+    if (myH && j.hours[0] > myH) sc -= 10;
+    var why = bits.length ? bits.join('; ') + '.' : 'Partial fit based on keywords.';
+    return { id: j.id, score: Math.max(5, Math.min(96, Math.round(sc))), why: why.charAt(0).toUpperCase() + why.slice(1) };
+  }).sort(function (a, b) { return b.score - a.score; }).slice(0, 5);
+  var byId = {};
+  scored.forEach(function (m) { byId[m.id] = { score: m.score, why: m.why }; });
+  return { source: 'local', byId: byId, profile: { languages: langs.map(function (l) { return l.charAt(0).toUpperCase() + l.slice(1); }), japanese: myJp ? JP[myJp] : 'None', skills: Object.keys(skillsFound).slice(0, 5), hours: myH, summary: '' } };
+}
+
+var matchCtl = null;
+function paintMatchBusy() {
+  var b = $('#matchBtn');
+  b.disabled = S.matchBusy;
+  b.textContent = S.matchBusy ? 'Matching…' : 'Find my matches';
+  paintAiState();
+}
+function runMatch() {
+  var ta = $('#me'), text = ta.value.trim();
+  if (text.length < 12) {
+    $('#aiState').textContent = 'Write a sentence or two first: languages, Japanese level, skills, hours per week.';
+    ta.focus(); return;
+  }
+  store.set('me', text);
+  S.matchBusy = true; paintMatchBusy();
+  var note = '';
+  getSample().then(function (sample) {
+    if (!sample || S.aiOff) return null;
+    matchCtl = new AbortController();
+    return sample.json(matchPrompt(text), { modelTier: 'quick', signal: matchCtl.signal }).then(function (data) {
+      var r = normalizeAi(data);
+      if (!r) note = 'The AI reply could not be used, so this is a keyword match. You can try again.';
+      return r;
+    }, function (e) {
+      var code = e && e.code;
+      if (code === 'cancelled') return 'cancelled';
+      if (AI_OFF[code]) { S.aiOff = true; note = 'AI is switched off for this view, so this is a keyword match.'; }
+      else if (code === 'rate_limited') note = 'AI is busy right now, so this is a keyword match. Try again in a minute.';
+      else note = 'The AI match did not come through, so this is a keyword match. You can try again.';
+      return null;
+    });
+  }).then(function (result) {
+    S.matchBusy = false;
+    if (result === 'cancelled') { paintMatchBusy(); return; }
+    if (!result) result = localMatch(text);
+    result.note = note;
+    S.match = result; S.sort = 'match'; $('#fSort').value = 'match';
+    var best = Object.keys(result.byId).sort(function (a, b) { return result.byId[b].score - result.byId[a].score; })[0];
+    if (best) { S.sel = best; S.showJa = false; S.composeFor = null; }
+    paintMatchBusy(); renderMatchOut(); renderList(); renderDetail();
+  });
+}
+function renderMatchOut() {
+  var box = $('#matchOut'), m = S.match;
+  box.hidden = !m;
+  if (!m) { box.innerHTML = ''; return; }
+  var p = m.profile, chips = [];
+  p.languages.forEach(function (l) { chips.push(l); });
+  if (p.japanese) chips.push('Japanese: ' + p.japanese);
+  if (p.hours) chips.push(p.hours + ' h/week');
+  p.skills.forEach(function (s) { chips.push(s); });
+  box.innerHTML = '<div class="match-out"><div class="mo-head"><strong>Your top ' + Object.keys(m.byId).length + ' matches are ranked first</strong>' +
+    '<span class="src">' + (m.source === 'ai' ? 'Ranked by Claude' : 'Keyword match') + '</span>' +
+    '<button type="button" class="link" data-act="clear-match">Clear</button></div>' +
+    (p.summary ? '<p>' + esc(p.summary) + '</p>' : '') +
+    (chips.length ? '<div class="mo-chips">' + chips.map(function (c) { return '<span>' + esc(c) + '</span>'; }).join('') + '</div>' : '') +
+    (m.note ? '<p class="mo-note">' + esc(m.note) + '</p>' : '') + '</div>';
+}
+
+function draftPrompt(job) {
+  var me = ($('#me').value || '').trim(), info = liveInfo(job);
+  return [
+    'Write a job application message from a candidate who lives outside Japan to a Japanese employer.',
+    '',
+    'JOB',
+    'Title: ' + job.title + ' (' + job.ja + ')',
+    'Company: ' + job.co + ' (' + job.coJa + ')',
+    'About: ' + job.desc,
+    'They ask for: ' + job.reqs.join('; '),
+    'Hours: ' + job.hours.join(' to ') + ' per week. ' + (job.live ? 'Live hours ' + hm(job.live.s) + '-' + hm(job.live.e) + ' JST, which is ' + info.text + ' in the candidate\'s time zone.' : 'No fixed hours.'),
+    '',
+    'CANDIDATE (their own words, any language)',
+    me ? '"""\n' + me.slice(0, 1500) + '\n"""' : 'No profile given. Write a neutral draft and put [square brackets] where the candidate must add their own experience.',
+    'Lives in: ' + loc().label,
+    '',
+    'Rules: use only facts stated above. Never invent employers, degrees, years of experience or a name. Sign off with [Your name] in English and ［お名前］ in Japanese.',
+    'Output exactly two parts separated by a line that contains only ===JA===',
+    'Part 1: the message in English, 90 to 130 words, first person, warm and specific to this job, plain text, no subject line, no markdown.',
+    'Part 2: the same message in natural, polite business Japanese (です・ます with appropriate 敬語), opening with ご担当者様, plain text, no romaji, no markdown.'
+  ].join('\n');
+}
+function splitDraft(text) {
+  var i = text.indexOf('===JA===');
+  if (i === -1) return { en: text.replace(/\n?=+(J(A(=*)?)?)?$/, '').trim(), ja: '' };
+  return { en: text.slice(0, i).trim(), ja: text.slice(i + 8).trim() };
+}
+function templateDraft(job) {
+  var info = liveInfo(job), L = loc();
+  return {
+    en: 'Hello,\n\nI would like to apply for the ' + job.title + ' role at ' + job.co + '. [One or two sentences about your most relevant experience.]\n\nI can work ' + job.hours[0] + ' to ' + job.hours[1] + ' hours a week from ' + L.label +
+      (job.live ? ', and the live hours (' + info.text + ' my time) work for me' : '') + '. [Your languages and levels.]\n\nThank you for your time. I would be glad to do a short trial task.\n\n[Your name]',
+    ja: 'ご担当者様\n\nはじめまして。貴社の「' + job.ja + '」の募集を拝見し、応募いたしました。\n［関連するご経験を1〜2文でご記入ください］\n\n現在' + L.label + 'に在住しており、週' + job.hours[0] + '〜' + job.hours[1] + '時間の稼働が可能です。\n\nお忙しいところ恐れ入りますが、ご検討のほどよろしくお願いいたします。トライアル課題にも喜んで対応いたします。\n\n［お名前］'
+  };
+}
+var draftCtl = null;
+function setDraft(jobId, p) {
+  S.drafts[jobId] = p;
+  if (S.sel !== jobId) return;
+  var en = $('#msgEn'), ja = $('#msgJa');
+  if (en) en.value = p.en;
+  if (ja) ja.value = p.ja;
+}
+function paintDraftBusy(busy, status) {
+  var d = $('#draftBtn'), s = $('#stopBtn'), send = $('#sendBtn'), st = $('#draftStatus');
+  if (d) { d.disabled = busy; d.textContent = busy ? 'Drafting…' : draftLabel(); }
+  if (s) s.hidden = !busy;
+  if (send) send.disabled = busy;
+  if (st && status !== undefined) st.textContent = status;
+}
+function runDraft() {
+  var job = JOB[S.sel];
+  if (!job || S.drafting) return;
+  getSample().then(function (sample) {
+    if (!sample || S.aiOff) {
+      setDraft(job.id, templateDraft(job));
+      paintDraftBusy(false, 'Template filled in. Replace the parts in brackets.');
+      return;
+    }
+    draftCtl = new AbortController(); S.drafting = job.id;
+    setDraft(job.id, { en: '', ja: '' });
+    paintDraftBusy(true, 'Thinking…');
+    var first = true;
+    return sample(draftPrompt(job), {
+      modelTier: 'quick', cache: false, signal: draftCtl.signal,
+      onText: function (u) {
+        if (first) { first = false; if (S.sel === job.id) paintDraftBusy(true, 'Writing in English, then Japanese…'); }
+        setDraft(job.id, splitDraft(u.text));
+      }
+    }).then(function (res) {
+      setDraft(job.id, splitDraft(res.text));
+      S.drafting = null;
+      if (S.sel === job.id) paintDraftBusy(false, res.truncated ? 'The draft was cut short. Finish the last lines yourself.' : 'Draft ready. Read both versions and edit before sending.');
+    }, function (e) {
+      var code = e && e.code, msg;
+      S.drafting = null;
+      if (code === 'refused') { setDraft(job.id, { en: '', ja: '' }); msg = 'The AI declined to write this one. Write it yourself, or change your profile text.'; }
+      else if (e && e.text) setDraft(job.id, splitDraft(e.text));
+      if (code === 'cancelled') msg = 'Stopped. Edit what is there, or draft again.';
+      else if (AI_OFF[code]) { S.aiOff = true; setDraft(job.id, templateDraft(job)); msg = 'AI is switched off for this view. Here is a template to fill in.'; paintAiState(); }
+      else if (code === 'rate_limited') msg = 'AI is busy right now. Try again in a minute, or write it yourself.';
+      else if (!msg) msg = 'The draft was interrupted. Try again, or finish it by hand.';
+      if (S.sel === job.id) paintDraftBusy(false, msg);
+    });
+  });
+}
+function sendApp() {
+  var job = JOB[S.sel], en = ($('#msgEn').value || '').trim(), ja = ($('#msgJa').value || '').trim();
+  if (en.length < 20 && ja.length < 20) { paintDraftBusy(false, 'Write a few lines first, or press ' + draftLabel() + '.'); return; }
+  S.apps.unshift({ jobId: job.id, at: Date.now(), en: en, ja: ja, stage: 0 });
+  store.set('apps', S.apps);
+  S.composeFor = null; delete S.drafts[job.id];
+  renderDetail(); renderNav();
+  toast('Saved to Applications. This is a prototype, so nothing was sent to the employer.');
+}
+
+/* ---------- applications ---------- */
+function appHtml(a) {
+  var job = JOB[a.jobId], days = Math.floor((Date.now() - a.at) / DAY);
+  return '<li class="app"><div class="app-head">' + bullet(job.cat) +
+    '<div><button type="button" class="app-title" data-open="' + job.id + '">' + esc(job.title) + '</button><div class="row-co">' + esc(job.co) + '</div></div>' +
+    '<div class="app-when"><span>Sent ' + ago(days) + '</span>' + (a.example ? '<span class="tag">Example</span>' : '') + '</div></div>' +
+    '<ol class="track" aria-label="Status: ' + STAGES[a.stage] + '">' + STAGES.map(function (s, i) { return '<li class="' + (i < a.stage ? 'done' : i === a.stage ? 'now' : '') + '">' + s + '</li>'; }).join('') + '</ol>' +
+    '<details><summary>Your message</summary><div class="msg">' + (a.en ? '<p>' + esc(a.en) + '</p>' : '') + (a.ja ? '<p lang="ja">' + esc(a.ja) + '</p>' : '') + '</div></details></li>';
+}
+function renderApps() {
+  var mine = S.apps, list = mine.length ? mine : EXAMPLE_APPS;
+  var saved = S.saved.map(function (id) { return JOB[id]; }).filter(Boolean);
+  $('#appsBox').innerHTML =
+    '<div class="apps-sec"><h2>Applications</h2>' +
+    '<p class="muted">' + (mine.length
+      ? 'Employers usually answer within three working days, Japan time.'
+      : 'You have not applied to anything yet. The two below are examples that show how tracking looks. They disappear once you apply.') + '</p>' +
+    '<ul class="apps-sec">' + list.map(appHtml).join('') + '</ul></div>' +
+    '<div class="apps-sec"><h2>Saved</h2>' +
+    (saved.length ? '<ul class="list">' + saved.map(rowHtml).join('') + '</ul>' : '<div class="empty"><p>Nothing saved yet. Press Save on a listing to keep it here.</p><a class="btn" href="#jobs">Browse listings</a></div>') +
+    '</div>';
+}
+function renderNav() {
+  var c = $('#appCount');
+  c.hidden = !S.apps.length; c.textContent = S.apps.length;
+  $('#navJobs').toggleAttribute('aria-current', S.view === 'jobs');
+  $('#navApps').toggleAttribute('aria-current', S.view === 'applications');
+  if (S.view === 'jobs') $('#navJobs').setAttribute('aria-current', 'page');
+  if (S.view === 'applications') $('#navApps').setAttribute('aria-current', 'page');
+}
+function route() {
+  S.view = (location.hash || '').replace('#', '') === 'applications' ? 'applications' : 'jobs';
+  $('#view-jobs').hidden = S.view !== 'jobs';
+  $('#view-apps').hidden = S.view !== 'applications';
+  if (S.view === 'applications') { S.sheetOpen = false; renderApps(); }
+  paintSheet(); renderNav();
+}
+function tick() {
+  $('#clkJp').textContent = hm(nowMin('Asia/Tokyo'));
+  $('#clkMe').textContent = hm(nowMin(loc().tz));
+}
+function repaintAll() { renderList(); renderDetail(); tick(); if (S.view === 'applications') renderApps(); }
+
+/* ---------- events ---------- */
+document.addEventListener('click', function (ev) {
+  var t = ev.target.closest('[data-open],[data-cat],[data-eg],[data-act]');
+  if (!t) return;
+  if (t.hasAttribute('data-open')) {
+    var id = t.getAttribute('data-open');
+    if (S.view !== 'jobs') { S.sel = id; S.showJa = false; S.sheetOpen = true; renderDetail(); renderList(); location.hash = 'jobs'; return; }
+    openJob(id); return;
+  }
+  if (t.hasAttribute('data-cat')) { S.cat = t.getAttribute('data-cat'); renderCats(); renderList(); return; }
+  if (t.hasAttribute('data-eg')) {
+    var eg = EGS[+t.getAttribute('data-eg')];
+    $('#me').value = eg.text; S.loc = eg.loc; $('#loc').value = eg.loc; store.set('loc', S.loc);
+    repaintAll(); $('#matchBtn').focus(); return;
+  }
+  var act = t.getAttribute('data-act');
+  if (act === 'close') { S.sheetOpen = false; paintSheet(); }
+  else if (act === 'toggle-ja') { S.showJa = !S.showJa; keepDraft(); renderDetail(); }
+  else if (act === 'save') {
+    var i = S.saved.indexOf(S.sel);
+    if (i === -1) S.saved.unshift(S.sel); else S.saved.splice(i, 1);
+    store.set('saved', S.saved); keepDraft(); renderDetail();
+    toast(i === -1 ? 'Saved. You will find it under Applications.' : 'Removed from saved.');
+  }
+  else if (act === 'apply') { S.composeFor = S.sel; renderDetail(); var en = $('#msgEn'); if (en) en.focus(); }
+  else if (act === 'draft') runDraft();
+  else if (act === 'stop') { if (draftCtl) draftCtl.abort(); }
+  else if (act === 'send') sendApp();
+  else if (act === 'clear-match') { S.match = null; S.sort = 'new'; $('#fSort').value = 'new'; renderMatchOut(); renderList(); renderDetail(); }
+  else if (act === 'clear-filters') {
+    S.q = ''; S.cat = 'all'; S.jp = 'any'; S.hours = 'any'; S.asyncOnly = false; S.hideNight = false;
+    $('#q').value = ''; $('#fJp').value = 'any'; $('#fHours').value = 'any'; $('#fAsync').checked = false; $('#fNight').checked = false;
+    renderCats(); renderList();
+  }
+});
+function keepDraft() {
+  var en = $('#msgEn'), ja = $('#msgJa');
+  if (en && ja && S.composeFor) S.drafts[S.composeFor] = { en: en.value, ja: ja.value };
+}
+$('#detail').addEventListener('input', function (ev) {
+  if (ev.target.id === 'estHours') { $('#estOut').innerHTML = estText(JOB[S.sel], +ev.target.value); return; }
+  if (ev.target.id === 'msgEn' || ev.target.id === 'msgJa') keepDraft();
+});
+$('#matchForm').addEventListener('submit', function (ev) { ev.preventDefault(); if (!S.matchBusy) runMatch(); });
+$('#q').addEventListener('input', function (ev) { S.q = ev.target.value; renderList(); });
+$('#fJp').addEventListener('change', function (ev) { S.jp = ev.target.value; renderList(); });
+$('#fHours').addEventListener('change', function (ev) { S.hours = ev.target.value; renderList(); });
+$('#fSort').addEventListener('change', function (ev) {
+  S.sort = ev.target.value;
+  if (S.sort === 'match' && !S.match) toast('Describe yourself above and press Find my matches to sort by fit.');
+  renderList();
+});
+$('#fAsync').addEventListener('change', function (ev) { S.asyncOnly = ev.target.checked; renderList(); });
+$('#fNight').addEventListener('change', function (ev) { S.hideNight = ev.target.checked; renderList(); });
+$('#loc').addEventListener('change', function (ev) { S.loc = ev.target.value; store.set('loc', S.loc); keepDraft(); repaintAll(); });
+window.addEventListener('hashchange', route);
+document.addEventListener('keydown', function (ev) { if (ev.key === 'Escape' && S.sheetOpen) { S.sheetOpen = false; paintSheet(); } });
+
+/* ---------- boot ---------- */
+$('#loc').innerHTML = LOCS.map(function (l) { return '<option value="' + l.id + '">' + esc(l.label) + '</option>'; }).join('');
+$('#loc').value = S.loc;
+$('#egs').innerHTML = EGS.map(function (e, i) { return '<button type="button" class="chip" data-eg="' + i + '">' + esc(e.label) + '</button>'; }).join('');
+$('#me').value = store.get('me', '') || '';
+renderCats(); renderList(); renderDetail(); renderMatchOut(); route(); tick(); paintAiState();
+setInterval(tick, 20000);
+})();
+</script>
+
+</body>
+</html>
